@@ -21,8 +21,8 @@ typedef struct s_data
 typedef struct s_philo{
 
     int     id;
-    int     L_fork;
-    int     R_fork;
+    int     l_fork;
+    int     r_fork;
     data_t  data;
 
 
