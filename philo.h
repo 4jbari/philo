@@ -23,7 +23,7 @@ typedef struct s_philo{
     int     id;
     int     l_fork;
     int     r_fork;
-    data_t  data;
+    data_t  *data;
 
 
 } philo_t;

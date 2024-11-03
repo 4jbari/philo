@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   philo.c                                            :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: ajbari <ajbari@student.42.fr>              +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/11/03 10:02:52 by ajbari            #+#    #+#             */
+/*   Updated: 2024/11/03 10:57:13 by ajbari           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "philo.h"
 
 long	ft_atoi(char *s)
@@ -82,19 +94,19 @@ int	parsing(char **av, data_t *data)
 
 // } 
 
-int init_philos(data_t data, philo_t **philo)
+int init_philos(data_t *data, philo_t **philo)
 {
 	int	i;
 
 	i = 0;
-	*philo = malloc(sizeof(philo_t) * data.num_of_philos);
+	*philo = malloc(sizeof(philo_t) * data->num_of_philos);
 	if (!*philo)
 		return (-1);
-	while (i < data.num_of_philos)
+	while (i < data->num_of_philos)
 	{
 		(*philo)[i].id = i + 1;
 		(*philo)[i].l_fork = i;
-		if ((*philo)[i].id == data.num_of_philos)
+		if ((*philo)[i].id == data->num_of_philos)
 			(*philo)[i].r_fork = 0;
 		else
 			(*philo)[i].r_fork = i + 1;
@@ -103,56 +115,81 @@ int init_philos(data_t data, philo_t **philo)
 	}
 	//remove below
 	i = 0;
-	while (i < data.num_of_philos)
+	while (i < data->num_of_philos)
 	{
-		printf("i:%d | id:%d\n", i, (*philo)[i].id);
-		printf("L:%d\n", (*philo)[i].l_fork);
-		printf("R:%d\n", (*philo)[i].r_fork);
+		printf("philo id = %d, left fork %d, right fork %d, time2die :%ld\n", (*philo)[i].id, (*philo)[i].l_fork, (*philo)[i].r_fork, (*philo)[i].data->time2die);
+		
 		i++;
 	}
 	return (1);
 }
-int init_forks(data_t data)
+
+int init_forks(data_t *data)
 {
 	int	i;
 	
 	i = 0;
-	data.forks = malloc(sizeof(pthread_mutex_t) * data.num_of_philos);
-	if (!data.forks)
+	data->forks = malloc(sizeof(pthread_mutex_t) * data->num_of_philos);
+	if (!data->forks)
 		return (-1);
-	while (i < data.num_of_philos)
+	while (i < data->num_of_philos)
 	{
-		if (pthread_mutex_init(&data.forks[i], NULL) != 0)
+		if (pthread_mutex_init(&data->forks[i], NULL) != 0)
 			return (-1);
 		i++;
 	}
 	return (1);
-
 }
-void routine(data_t data, philo_t philo)
+
+void routine(void *arg)
 {
-	pthread_mutex_lock(&data.forks[philo.l_fork]);
-	pthread_mutex_lock(&data.forks[philo.r_fork]);
+	philo_t *philo = (philo_t *)arg;
+	pthread_mutex_lock(&philo->data->forks[philo->l_fork]);
+	printf("address de fork :%p\n", &philo->data->forks[philo->l_fork]);
+		
+	pthread_mutex_unlock(&philo->data->forks[philo->l_fork]);
+	pthread_mutex_lock(&philo->data->forks[philo->l_fork]);
+	pthread_mutex_lock(&philo->data->forks[philo->r_fork]);
+	printf("TEST in threatd :%d\n", philo->id);
+	
+	pthread_mutex_unlock(&philo->data->forks[philo->l_fork]);
+	pthread_mutex_unlock(&philo->data->forks[philo->r_fork]);
+	pthread_mutex_lock(&philo->data->forks[philo->l_fork]);
+	pthread_mutex_lock(&philo->data->forks[philo->r_fork]);
 	int i = 0;
+	printf("IN MUTEXE\n");
 
 	printf("routine:%d\n", i++);
 
-	pthread_mutex_unlock(&data.forks[philo.l_fork]);
-	pthread_mutex_unlock(&data.forks[philo.r_fork]);
+	pthread_mutex_unlock(&philo->data->forks[philo->l_fork]);
+	pthread_mutex_unlock(&philo->data->forks[philo->r_fork]);
 
 }
-int init_threads(data_t data, philo_t *philo)
+int init_threads(data_t *data, philo_t *philo)
 {
 	int	i;
 	pthread_t *threads;
 
 
 	i = 0;
-	threads = malloc (sizeof(pthread_t) * data.num_of_philos);
-	while (i < data.num_of_philos && i % 2 == 0)
+	threads = malloc (sizeof(pthread_t) * data->num_of_philos);
+	while (i < data->num_of_philos)
 	{
-		if (pthread_create(&threads[i], NULL, (void *)routine, &philo[i]) != 0)
-			return (-1);
+		if (1)
+		{
+			if (i % 2 == 0 && pthread_create(&threads[i], NULL, (void *)routine, &philo[i]) == 0)
+			{
+				printf("IN=====\n");
+				// perror("pthreat_create :");
+				// return (-1);
+			}
+		}
+		i++;
+	}
+	i = 0;
+	while (i < data->num_of_philos)
+	{
+		pthread_join(threads[i], NULL);
 		i++;
 	}
 	return (1);
@@ -172,28 +209,18 @@ int	main(int ac, char **av)
 	if (parsing(av, &data) == -1)
 		return (-1);
 	
-	init_philos(data, &philos);
-	init_forks(data);
-	init_threads(data, philos);
+	init_philos(&data, &philos);
+	
+	
+	init_forks(&data);
 
-	// int i = 0;
-	// while (i < data.num_of_philos)
-	// {
-	// 	printf("L:%d\n", data.philo->l_fork);
-	// 	printf("R:%d\n", data.philo->R_fork);
-	// 	i++;
-	// }
-	// init_forks()
-
-	// init_threads(data);
+	printf("%d\n", 	init_threads(&data, philos));
 
 
 
 
 
-
-
-
+	//PRINTING DATA;
 
 	// printf("%ld\n", data.num_of_philos);
 	// printf("%ld\n", data.time2die);
