@@ -1,14 +1,5 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   philo.c                                            :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: ajbari <ajbari@student.42.fr>              +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2024/11/03 10:02:52 by ajbari            #+#    #+#             */
-/*   Updated: 2024/11/03 10:57:13 by ajbari           ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
+// TODAY NOT GOING HOME UNTIL:
+// (1) starting the simulation with routine () 
 
 #include "philo.h"
 
@@ -62,38 +53,16 @@ int	parsing(char **av, data_t *data)
 	// 	return (-1);
 	return (1);
 }
-
-
-// sleeo 
-
-// eat()
-// {
-// 	pthread_mutex_lock();
-	
-// 	pthread_mutex_lock()
-// 	sleep(4)
-	
-// 	unlock
-// }
-
-// routine {
-
-// 	while (1)
-// 	{
-// 		lock(mutex1);
-// 		eat()
-// 		sleep()
-// 		think()
-// 		unlock(mutex1);
-// 	}
-
-// }
-
-// void init_threads(data_t data)
-// {
-
-// } 
-
+long	get_time()
+{
+	struct timeval	time;
+	if (gettimeofday(&time, NULL) != 0)
+	{
+		perror("gettimeofday");
+		return (-1);
+	}
+	return ((time.tv_sec * 1000) + (time.tv_usec / 1000));
+}
 int init_philos(data_t *data, philo_t **philo)
 {
 	int	i;
@@ -113,14 +82,18 @@ int init_philos(data_t *data, philo_t **philo)
 		(*philo)[i].data = data; //assigning the data struct to each philo
 		i++;
 	}
+	data->start_time = get_time();
+	printf("start_time :%ld\n", data->start_time);
+
+
 	//remove below
-	i = 0;
-	while (i < data->num_of_philos)
-	{
-		printf("philo id = %d, left fork %d, right fork %d, time2die :%ld\n", (*philo)[i].id, (*philo)[i].l_fork, (*philo)[i].r_fork, (*philo)[i].data->time2die);
+	// i = 0;
+	// while (i < data->num_of_philos)
+	// {
+	// 	printf("philo id = %d, left fork %d, right fork %d, time2die :%ld\n", (*philo)[i].id, (*philo)[i].l_fork, (*philo)[i].r_fork, (*philo)[i].data->time2die);
 		
-		i++;
-	}
+	// 	i++;
+	// }
 	return (1);
 }
 
@@ -138,32 +111,64 @@ int init_forks(data_t *data)
 			return (-1);
 		i++;
 	}
+	if (pthread_mutex_init(&data->print_mtx, NULL) != 0)
+		return (-1);
 	return (1);
+}
+
+void	print_fun(int flag, int id, data_t *data)
+{
+	pthread_mutex_lock(&data->print_mtx);
+
+	//print the log
+
+	pthread_mutex_unlock(&data->print_mtx);
+
+
+
+
+
+}
+
+void	eating(data_t *data)
+{
+	print_fun();
+	while (get_time() - data->start_time < data->time2eat)
+		usleep(250);
+}
+void	sleeping(data_t *data)
+{
+
+
+
 }
 
 void routine(void *arg)
 {
 	philo_t *philo = (philo_t *)arg;
-	pthread_mutex_lock(&philo->data->forks[philo->l_fork]);
-	printf("address de fork :%p\n", &philo->data->forks[philo->l_fork]);
-		
-	pthread_mutex_unlock(&philo->data->forks[philo->l_fork]);
+
+	pthread_mutex_lock(&philo->data->print_mtx);
+	printf("TEST%d\n", philo->id);
+	pthread_mutex_unlock(&philo->data->print_mtx);
+//lock
 	pthread_mutex_lock(&philo->data->forks[philo->l_fork]);
 	pthread_mutex_lock(&philo->data->forks[philo->r_fork]);
-	printf("TEST in threatd :%d\n", philo->id);
+	pthread_mutex_lock(&philo->data->print_mtx);
+	//philo takes fork1 && fork2 (printf p1 toke fork)
+		printf("%ld philo :%d  has taken a fork\n", (get_time() - philo->data->start_time),  philo->id);
+		printf("%ld philo :%d  has taken a fork\n", (get_time() - philo->data->start_time), philo->id);
+	//eating()
+		eating(philo->data);
+//unlock
+	pthread_mutex_unlock(&philo->data->print_mtx);
+	pthread_mutex_unlock(&philo->data->forks[philo->r_fork]);
+	pthread_mutex_unlock(&philo->data->forks[philo->l_fork]);
+
 	
-	pthread_mutex_unlock(&philo->data->forks[philo->l_fork]);
-	pthread_mutex_unlock(&philo->data->forks[philo->r_fork]);
-	pthread_mutex_lock(&philo->data->forks[philo->l_fork]);
-	pthread_mutex_lock(&philo->data->forks[philo->r_fork]);
-	int i = 0;
-	printf("IN MUTEXE\n");
-
-	printf("routine:%d\n", i++);
-
-	pthread_mutex_unlock(&philo->data->forks[philo->l_fork]);
-	pthread_mutex_unlock(&philo->data->forks[philo->r_fork]);
-
+//sleeping(); (printf 4 a time)
+	sleeping(philo->data);
+	//thinking(); (printf 4 a time)
+	thinking(philo->data);
 }
 int init_threads(data_t *data, philo_t *philo)
 {
@@ -177,11 +182,10 @@ int init_threads(data_t *data, philo_t *philo)
 	{
 		if (1)
 		{
-			if (i % 2 == 0 && pthread_create(&threads[i], NULL, (void *)routine, &philo[i]) == 0)
+			if (i % 2 == 0 && pthread_create(&threads[i], NULL, (void *)routine, &philo[i]) != 0)
 			{
-				printf("IN=====\n");
-				// perror("pthreat_create :");
-				// return (-1);
+				perror("pthread_create :")	;
+				return (-1);
 			}
 		}
 		i++;
@@ -203,6 +207,7 @@ int	main(int ac, char **av)
 	data_t data;
 	philo_t *philos;
 	
+	
 	if (ac != 5 && ac != 6)
 		return (printf("the program takes : nbr_of_philos, time2die, time2eat,"\
 		 " time2sleep, [nbr_times_each_philo_must_eat]"));
@@ -214,11 +219,11 @@ int	main(int ac, char **av)
 	
 	init_forks(&data);
 
-	printf("%d\n", 	init_threads(&data, philos));
+	printf("return of init_threads :%d\n", 	init_threads(&data, philos));
 
 
 
-
+	// printf("%ld", sysconf(_SC_CLK_TCK));
 
 	//PRINTING DATA;
 
@@ -227,4 +232,4 @@ int	main(int ac, char **av)
 	// printf("%ld\n", data.time2eat);
 	// printf("%ld\n", data.time2sleep);
 	// printf("%ld\n", data.num_of_meals);
-}
+} 

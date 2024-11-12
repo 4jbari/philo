@@ -1,11 +1,14 @@
 #ifndef PHILO_H
 #define PHILO_H
 
-
+#include <unistd.h>
 // LIBRARIES
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <sys/time.h>
+#include <stdbool.h>
+
 
 typedef struct s_data
 {
@@ -14,6 +17,8 @@ typedef struct s_data
     long            time2eat;
     long            time2sleep;
     long            num_of_meals;
+    long            start_time;
+    pthread_mutex_t print_mtx;
     pthread_mutex_t *forks;
 } data_t;
 
@@ -24,8 +29,6 @@ typedef struct s_philo{
     int     l_fork;
     int     r_fork;
     data_t  *data;
-
-
 } philo_t;
 
 
