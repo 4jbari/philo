@@ -1,5 +1,9 @@
-// TODAY NOT GOING HOME UNTIL:
-// (1) starting the simulation with routine () 
+//NOT GOIG BREEAKFAST UNTIL:
+	// (0)FINNISHING 2 ROUTINE FUNS (√)
+//NOT GOING HOME UNTIL:
+	// (1)ROUTINE FUNCTIONS COMPLETED (√)
+// TODAY NOT GOING TO SLEEP UNTIL:
+	// (2) starting the simulation with the full routine () 
 
 #include "philo.h"
 
@@ -83,7 +87,7 @@ int init_philos(data_t *data, philo_t **philo)
 		i++;
 	}
 	data->start_time = get_time();
-	printf("start_time :%ld\n", data->start_time);
+	// printf("start_time :%ld", data->start_time);
 
 
 	//remove below
@@ -118,57 +122,68 @@ int init_forks(data_t *data)
 
 void	print_fun(int flag, int id, data_t *data)
 {
+	long	timestamp;
+
 	pthread_mutex_lock(&data->print_mtx);
-
-	//print the log
-
+	timestamp = get_time() - data->start_time;
+	if (flag == 0)
+		printf("%ld %d has taken a fork\n", get_time() - data->start_time, id);
+	else if (flag == 1)
+		printf("%ld %d is eating\n", get_time() - data->start_time, id);
+	else if (flag == 2)
+		printf("%ld %d is sleeping\n", get_time() - data->start_time, id);
+	else if (flag == 3)
+		printf("%ld %d is thinking\n", get_time() - data->start_time, id);
 	pthread_mutex_unlock(&data->print_mtx);
-
-
-
-
-
 }
 
-void	eating(data_t *data)
+void	eating(philo_t *philo)
 {
-	print_fun();
+	data_t *data;
+
+	data = philo->data;
+	print_fun(1, philo->id, data);
 	while (get_time() - data->start_time < data->time2eat)
 		usleep(250);
 }
-void	sleeping(data_t *data)
+void	sleeping(philo_t *philo)
 {
+	data_t	*data;
 
-
-
+	data = philo->data;
+	print_fun(2, philo->id, data);
+	while (get_time() - data->start_time < data->time2sleep)
+		usleep(250);
+	
 }
+void	thinking(philo_t *philo)
+{
+	data_t	*data;
 
+	data = philo->data;
+	print_fun(3, philo->id, data);
+}
 void routine(void *arg)
 {
 	philo_t *philo = (philo_t *)arg;
 
-	pthread_mutex_lock(&philo->data->print_mtx);
-	printf("TEST%d\n", philo->id);
-	pthread_mutex_unlock(&philo->data->print_mtx);
 //lock
 	pthread_mutex_lock(&philo->data->forks[philo->l_fork]);
 	pthread_mutex_lock(&philo->data->forks[philo->r_fork]);
-	pthread_mutex_lock(&philo->data->print_mtx);
 	//philo takes fork1 && fork2 (printf p1 toke fork)
-		printf("%ld philo :%d  has taken a fork\n", (get_time() - philo->data->start_time),  philo->id);
-		printf("%ld philo :%d  has taken a fork\n", (get_time() - philo->data->start_time), philo->id);
+		print_fun(0, philo->id, philo->data);
+		print_fun(0, philo->id, philo->data);
 	//eating()
-		eating(philo->data);
+		eating(philo);
 //unlock
-	pthread_mutex_unlock(&philo->data->print_mtx);
 	pthread_mutex_unlock(&philo->data->forks[philo->r_fork]);
 	pthread_mutex_unlock(&philo->data->forks[philo->l_fork]);
 
 	
 //sleeping(); (printf 4 a time)
-	sleeping(philo->data);
-	//thinking(); (printf 4 a time)
-	thinking(philo->data);
+	sleeping(philo);
+//thinking(); (printf 4 a time)
+	thinking(philo);
 }
 int init_threads(data_t *data, philo_t *philo)
 {
@@ -182,7 +197,7 @@ int init_threads(data_t *data, philo_t *philo)
 	{
 		if (1)
 		{
-			if (i % 2 == 0 && pthread_create(&threads[i], NULL, (void *)routine, &philo[i]) != 0)
+			if (pthread_create(&threads[i], NULL, (void *)routine, &philo[i]) != 0)
 			{
 				perror("pthread_create :")	;
 				return (-1);
@@ -197,12 +212,10 @@ int init_threads(data_t *data, philo_t *philo)
 		i++;
 	}
 	return (1);
-
 }
 
 int	main(int ac, char **av)
 {
-	printf("ac:%d\n", ac);
 	
 	data_t data;
 	philo_t *philos;
@@ -215,11 +228,9 @@ int	main(int ac, char **av)
 		return (-1);
 	
 	init_philos(&data, &philos);
-	
-	
-	init_forks(&data);
 
-	printf("return of init_threads :%d\n", 	init_threads(&data, philos));
+	init_forks(&data);
+	init_threads(&data, philos);
 
 
 
