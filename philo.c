@@ -1,9 +1,9 @@
-//NOT GOIG BREEAKFAST UNTIL:
-	// (0)FINNISHING 2 ROUTINE FUNS (√)
-//NOT GOING HOME UNTIL:
-	// (1)ROUTINE FUNCTIONS COMPLETED (√)
-// TODAY NOT GOING TO SLEEP UNTIL:
-	// (2) starting the simulation with the full routine () 
+//TODO TODAY BEFORE GOING HOME:
+	//*(1) MONITOR; ** 6:00 									()
+	//*(2) FIX THE SPLITTING OF THE PHILOS ROUTINE ** 6:45		()
+	//*(3) SET THE NEW TASKS **BEFORE ** 6						()
+
+
 
 #include "philo.h"
 
@@ -84,6 +84,7 @@ int init_philos(data_t *data, philo_t **philo)
 		else
 			(*philo)[i].r_fork = i + 1;
 		(*philo)[i].data = data; //assigning the data struct to each philo
+		(*philo)[i].last_meal = 0;
 		i++;
 	}
 	data->start_time = get_time();
@@ -142,6 +143,7 @@ void	eating(philo_t *philo)
 	data_t *data;
 
 	data = philo->data;
+	philo->last_meal = get_time();
 	print_fun(1, philo->id, data);
 	while (get_time() - data->start_time < data->time2eat)
 		usleep(250);
@@ -169,9 +171,10 @@ void routine(void *arg)
 
 //lock
 	pthread_mutex_lock(&philo->data->forks[philo->l_fork]);
-	pthread_mutex_lock(&philo->data->forks[philo->r_fork]);
-	//philo takes fork1 && fork2 (printf p1 toke fork)
+	//philo takes fork1 (printf p1 toke fork)
 		print_fun(0, philo->id, philo->data);
+	pthread_mutex_lock(&philo->data->forks[philo->r_fork]);
+	//philo takes fork2 (printf p2 toke fork)
 		print_fun(0, philo->id, philo->data);
 	//eating()
 		eating(philo);
@@ -185,32 +188,55 @@ void routine(void *arg)
 //thinking(); (printf 4 a time)
 	thinking(philo);
 }
+
+void	monitor(void *arg)
+{
+	philo_t	*philo;
+	data_t	data;
+	int		i;
+	
+	i = 0;
+	philo = (philo_t *)arg;
+	data = data;
+	while (1)
+	{
+		i = 0;
+		while (i < data.num_of_philos)
+		{
+			if (get_time() - philo->last_meal > data.time2die)
+			{
+				data.simu_end = 1;
+				return ;
+			}
+			i++;
+		}
+	}
+}
+
 int init_threads(data_t *data, philo_t *philo)
 {
-	int	i;
-	pthread_t *threads;
-
+	pthread_t	*threads;
+	int			i;
 
 	i = 0;
-	threads = malloc (sizeof(pthread_t) * data->num_of_philos);
+	threads = malloc (sizeof(pthread_t) * (data->num_of_philos + 1)); //+1 for the monitor's thread
 	while (i < data->num_of_philos)
 	{
-		if (1)
+		if (pthread_create(&threads[i], NULL, (void *)routine, &philo[i]) != 0)
 		{
-			if (pthread_create(&threads[i], NULL, (void *)routine, &philo[i]) != 0)
-			{
-				perror("pthread_create :")	;
-				return (-1);
-			}
+			perror("pthread_create :");
+			return (-1);
 		}
 		i++;
 	}
+
+	if (pthread_create(&threads[i], NULL, (void *)monitor, philo))
+		return (-1);
 	i = 0;
 	while (i < data->num_of_philos)
-	{
-		pthread_join(threads[i], NULL);
-		i++;
-	}
+		pthread_join(threads[i++], NULL);
+	
+	free(threads);
 	return (1);
 }
 
