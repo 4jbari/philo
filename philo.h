@@ -9,6 +9,7 @@
 #include <sys/time.h>
 #include <stdbool.h>
 
+//DEFINE MACROS
 
 typedef struct s_data
 {
@@ -19,6 +20,8 @@ typedef struct s_data
     long            num_of_meals;
     long            start_time;
     int             simu_end;
+    int             died_philo;
+    pthread_mutex_t last_meal;
     pthread_mutex_t print_mtx;
     pthread_mutex_t *forks;
 } data_t;
@@ -33,7 +36,6 @@ typedef struct s_philo{
     long    last_meal;
     data_t  *data;
 } philo_t;
-
 
 
 
