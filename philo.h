@@ -20,7 +20,7 @@ typedef struct s_data
     long            num_of_meals;
     long            start_time;
     int             simu_end;
-    int             died_philo;
+    pthread_mutex_t simu_end_mtx;
     pthread_mutex_t last_meal;
     pthread_mutex_t print_mtx;
     pthread_mutex_t *forks;

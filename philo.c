@@ -88,7 +88,6 @@ int init_philos(data_t *data, philo_t **philo)
 		i++;
 	}
 	data->simu_end = 0;
-	data->died_philo = 0;
 	// printf("start_time :%ld", data->start_time);
 
 
@@ -121,6 +120,8 @@ int init_forks(data_t *data)
 		return (-1);
 	if (pthread_mutex_init(&data->last_meal, NULL) != 0)
 		return (-1);
+	if (pthread_mutex_init(&data->simu_end_mtx, NULL) != 0)
+		return (-1);
 	return (1);
 }
 
@@ -128,6 +129,7 @@ void	print_fun(int flag, int id, data_t *data)
 {
 	long	timestamp;
 
+	pthread_mutex_lock(&data->simu_end_mtx);
 	if (!data->simu_end)
 	{
 		pthread_mutex_lock(&data->print_mtx);
@@ -143,6 +145,7 @@ void	print_fun(int flag, int id, data_t *data)
 		pthread_mutex_unlock(&data->print_mtx);
 		// return (1);
 	}
+	pthread_mutex_unlock(&data->simu_end_mtx);
 	// return (0);
 }
 
@@ -180,50 +183,44 @@ void	thinking(philo_t *philo)
 	long	start_action;
 
 	data = philo->data;
-	start_action = get_time();
 	print_fun(3, philo->id, data);
 }
 void routine(void *arg)
 {
 	philo_t *philo = (philo_t *)arg;
-if (philo->id % 2 == 0)
-{
-//lock
-	pthread_mutex_lock(&philo->data->forks[philo->l_fork]);
-	//philo takes fork1 (printf p1 toke fork)
-		print_fun(0, philo->id, philo->data);
-	pthread_mutex_lock(&philo->data->forks[philo->r_fork]);
-	//philo takes fork2 (printf p2 toke fork)
-		print_fun(0, philo->id, philo->data);
-	//eating()
-		eating(philo);
-//unlock
-	pthread_mutex_unlock(&philo->data->forks[philo->r_fork]);
-	pthread_mutex_unlock(&philo->data->forks[philo->l_fork]);
-//sleeping(); (printf 4 a time)
-	sleeping(philo);
-//thinking(); (printf 4 a time)
-	thinking(philo);
-}
-else 
-{
-//sleeping(); (printf 4 a time)
-	sleeping(philo);
-	//lock
-	pthread_mutex_lock(&philo->data->forks[philo->l_fork]);
-	//philo takes fork1 (printf p1 toke fork)
-		print_fun(0, philo->id, philo->data);
-	pthread_mutex_lock(&philo->data->forks[philo->r_fork]);
-	//philo takes fork2 (printf p2 toke fork)
-		print_fun(0, philo->id, philo->data);
-	//eating()
-		eating(philo);
-//unlock
-	pthread_mutex_unlock(&philo->data->forks[philo->r_fork]);
-	pthread_mutex_unlock(&philo->data->forks[philo->l_fork]);
-//thinking(); (printf 4 a time)
-	thinking(philo);
-}
+	if (philo->id % 2 == 0)
+		sleeping(philo);
+
+	while (1)
+	{
+		pthread_mutex_lock(&philo->data->simu_end_mtx);
+		if ( philo->data->simu_end)
+		{
+
+			pthread_mutex_unlock(&philo->data->simu_end_mtx);
+			break;
+		}
+
+		pthread_mutex_unlock(&philo->data->simu_end_mtx);
+
+		//lock
+			pthread_mutex_lock(&philo->data->forks[philo->l_fork]);
+			//philo takes fork1 (printf p1 toke fork)
+				print_fun(0, philo->id, philo->data);
+			pthread_mutex_lock(&philo->data->forks[philo->r_fork]);
+			//philo takes fork2 (printf p2 toke fork)
+				print_fun(0, philo->id, philo->data);
+			//eating()
+				eating(philo);
+		//unlock
+			pthread_mutex_unlock(&philo->data->forks[philo->l_fork]);
+			pthread_mutex_unlock(&philo->data->forks[philo->r_fork]);
+		//sleeping(); (printf 4 a time)
+			sleeping(philo);
+		//thinking(); (printf 4 a time)
+			thinking(philo);
+	}
+
 }
 
 void	monitor(void *arg)
@@ -243,19 +240,27 @@ void	monitor(void *arg)
 
 			// printf("time_from_last_meal :%ld\n", (get_time() - philo[i].last_meal));
 			// printf("last_meal :%ld\n\n",  philo[i].last_meal);
+			pthread_mutex_lock(&data->last_meal);
 
-			if ((philo[i].last_meal )&&(get_time() - philo[i].last_meal) > data->time2die)
+			if ((philo[i].last_meal )&&(get_time() - philo[i].last_meal) >= data->time2die)
 			{
-				data->died_philo = philo[i].id;
+				pthread_mutex_lock(&data->simu_end_mtx);
 				data->simu_end = 1;
+				pthread_mutex_unlock(&data->simu_end_mtx);
+				
 				pthread_mutex_lock(&data->print_mtx);
 				printf("%ld %d died\n", get_time() - data->start_time, philo[i].id);
 				pthread_mutex_unlock(&data->print_mtx);
+				// printf("BRUH STILL ALIVE\n");
 
+
+				pthread_mutex_unlock(&data->last_meal);
 				return ;
 			}
+			pthread_mutex_unlock(&data->last_meal);
 			i++;
 		}
+		usleep(250);
 
 	}
 }
@@ -266,7 +271,7 @@ int init_threads(data_t *data, philo_t *philo)
 	int			i;
 
 	i = 0;
-	threads = malloc (sizeof(pthread_t) * (data->num_of_philos + 1)); //+1 for the monitor's thread
+	threads = malloc (sizeof(pthread_t) * (data->num_of_philos)); //+1 for the monitor's thread
 	while (i < data->num_of_philos)
 	{
 		if (pthread_create(&threads[i], NULL, (void *)routine, &philo[i]) != 0)
@@ -276,7 +281,7 @@ int init_threads(data_t *data, philo_t *philo)
 		}
 		i++;
 	}
-	if (pthread_create(&threads[i], NULL, (void *)monitor, philo))
+	monitor(philo);
 		return (-1);
 	i = 0;
 	while (i < data->num_of_philos)
