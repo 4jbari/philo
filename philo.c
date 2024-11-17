@@ -1,7 +1,10 @@
-//TODO TODAY BEFORE GOING HOME:
-	//*(1) MONITOR; ** 12:30 									()
-	//*(2) FIX THE SPLITTING OF THE PHILOS ROUTINE **12:45		()
-	//*(3) SET THE NEW TASKS **BEFORE ** 1						()
+//TODO TODAY BEFORE GOING TO BED :
+	//THE MANDATORY IS READY TO PUSH ( )
+		//CHECK WHERE I WAS AT YESTERDAY			(√)
+		//FIX THE SIGFAULT							(√)
+		//KNOW WHY THE SEGFAULT 					( )
+
+
 
 
 #include "philo.h"
@@ -84,6 +87,7 @@ int init_philos(data_t *data, philo_t **philo)
 		else
 			(*philo)[i].r_fork = i + 1;
 		(*philo)[i].data = data; //assigning the data struct to each philo
+		printf("====================================================>data:%p\n", data);
 		(*philo)[i].last_meal = data->start_time;
 		i++;
 	}
@@ -271,7 +275,7 @@ int init_threads(data_t *data, philo_t *philo)
 	int			i;
 
 	i = 0;
-	threads = malloc (sizeof(pthread_t) * (data->num_of_philos)); //+1 for the monitor's thread
+	threads = malloc (sizeof(pthread_t) * (data->num_of_philos));
 	while (i < data->num_of_philos)
 	{
 		if (pthread_create(&threads[i], NULL, (void *)routine, &philo[i]) != 0)
@@ -282,7 +286,7 @@ int init_threads(data_t *data, philo_t *philo)
 		i++;
 	}
 	monitor(philo);
-		return (-1);
+		// return (-1);
 	i = 0;
 	while (i < data->num_of_philos)
 		pthread_join(threads[i++], NULL);
@@ -308,17 +312,16 @@ int	main(int ac, char **av)
 	init_philos(&data, &philos);
 
 	init_forks(&data);
-	init_threads(&data, philos);
 
+	init_threads(&data, philos);
 
 
 	// printf("%ld", sysconf(_SC_CLK_TCK));
 
 	//PRINTING DATA;
-
-	// printf("%ld\n", data.num_of_philos);
-	// printf("%ld\n", data.time2die);
-	// printf("%ld\n", data.time2eat);
-	// printf("%ld\n", data.time2sleep);
-	// printf("%ld\n", data.num_of_meals);
-} 
+		// printf("%ld\n", data.num_of_philos);
+		// printf("%ld\n", data.time2die);
+		// printf("%ld\n", data.time2eat);
+		// printf("%ld\n", data.time2sleep);
+		// printf("%ld\n", data.num_of_meals);
+}
