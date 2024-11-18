@@ -2,6 +2,7 @@
 #define PHILO_H
 
 #include <unistd.h>
+
 // LIBRARIES
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,7 +10,13 @@
 #include <sys/time.h>
 #include <stdbool.h>
 
-//DEFINE MACROS
+// MACROS
+#define FORK    0
+#define EAT     1
+#define SLEEP   2
+#define THINK   3
+
+
 
 typedef struct s_data
 {

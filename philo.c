@@ -2,7 +2,7 @@
 	//THE MANDATORY IS READY TO PUSH ( )
 		//CHECK WHERE I WAS AT YESTERDAY			(√)
 		//FIX THE SIGFAULT							(√)
-		//KNOW WHY THE SEGFAULT 					( )
+		//KNOW WHY THE SEGFAULT 					(√)
 
 
 
@@ -87,7 +87,6 @@ int init_philos(data_t *data, philo_t **philo)
 		else
 			(*philo)[i].r_fork = i + 1;
 		(*philo)[i].data = data; //assigning the data struct to each philo
-		printf("====================================================>data:%p\n", data);
 		(*philo)[i].last_meal = data->start_time;
 		i++;
 	}
@@ -138,19 +137,18 @@ void	print_fun(int flag, int id, data_t *data)
 	{
 		pthread_mutex_lock(&data->print_mtx);
 		timestamp = get_time() - data->start_time;
-		if (flag == 0)
+		if (flag == FORK)
 			printf("%ld %d has taken a fork\n", get_time() - data->start_time, id);
-		else if (flag == 1)
+		else if (flag == EAT)
 			printf("%ld %d is eating\n", get_time() - data->start_time, id);
-		else if (flag == 2)
+		else if (flag == SLEEP)
 			printf("%ld %d is sleeping\n", get_time() - data->start_time, id);
-		else if (flag == 3)
+		else if (flag == THINK)
 			printf("%ld %d is thinking\n", get_time() - data->start_time, id);
 		pthread_mutex_unlock(&data->print_mtx);
 		// return (1);
 	}
 	pthread_mutex_unlock(&data->simu_end_mtx);
-	// return (0);
 }
 
 void	eating(philo_t *philo)
@@ -165,10 +163,11 @@ void	eating(philo_t *philo)
 	pthread_mutex_lock(&data->last_meal);
 	philo->last_meal = get_time();
 	pthread_mutex_unlock(&data->last_meal);
-	print_fun(1, philo->id, data);
+	print_fun(EAT, philo->id, data);
 	while (get_time() - start_action < data->time2eat)
 		usleep(250);
 }
+
 void	sleeping(philo_t *philo)
 {
 	data_t	*data;
@@ -176,19 +175,20 @@ void	sleeping(philo_t *philo)
 
 	data = philo->data;
 	start_action = get_time();
-	print_fun(2, philo->id, data);
+	print_fun(SLEEP, philo->id, data);
 	while (get_time() - start_action < data->time2sleep)
 		usleep(250);
-	
 }
+
 void	thinking(philo_t *philo)
 {
 	data_t	*data;
 	long	start_action;
 
 	data = philo->data;
-	print_fun(3, philo->id, data);
+	print_fun(THINK, philo->id, data);
 }
+
 void routine(void *arg)
 {
 	philo_t *philo = (philo_t *)arg;
@@ -200,31 +200,22 @@ void routine(void *arg)
 		pthread_mutex_lock(&philo->data->simu_end_mtx);
 		if ( philo->data->simu_end)
 		{
-
 			pthread_mutex_unlock(&philo->data->simu_end_mtx);
 			break;
 		}
-
 		pthread_mutex_unlock(&philo->data->simu_end_mtx);
-
-		//lock
-			pthread_mutex_lock(&philo->data->forks[philo->l_fork]);
-			//philo takes fork1 (printf p1 toke fork)
-				print_fun(0, philo->id, philo->data);
-			pthread_mutex_lock(&philo->data->forks[philo->r_fork]);
-			//philo takes fork2 (printf p2 toke fork)
-				print_fun(0, philo->id, philo->data);
-			//eating()
-				eating(philo);
-		//unlock
-			pthread_mutex_unlock(&philo->data->forks[philo->l_fork]);
-			pthread_mutex_unlock(&philo->data->forks[philo->r_fork]);
-		//sleeping(); (printf 4 a time)
-			sleeping(philo);
-		//thinking(); (printf 4 a time)
-			thinking(philo);
+		pthread_mutex_lock(&philo->data->forks[philo->l_fork]);
+		print_fun(FORK, philo->id, philo->data);
+		if (philo->data->num_of_philos == 1)					// PROTECT THE CASE OF 1 PHILOSOPHER
+			return ;
+		pthread_mutex_lock(&philo->data->forks[philo->r_fork]);
+		print_fun(FORK, philo->id, philo->data);
+		eating(philo);
+		pthread_mutex_unlock(&philo->data->forks[philo->l_fork]);
+		pthread_mutex_unlock(&philo->data->forks[philo->r_fork]);
+		sleeping(philo);
+		thinking(philo);
 	}
-
 }
 
 void	monitor(void *arg)
@@ -241,11 +232,9 @@ void	monitor(void *arg)
 		i = 0;
 		while (i < data->num_of_philos)
 		{
-
 			// printf("time_from_last_meal :%ld\n", (get_time() - philo[i].last_meal));
 			// printf("last_meal :%ld\n\n",  philo[i].last_meal);
 			pthread_mutex_lock(&data->last_meal);
-
 			if ((philo[i].last_meal )&&(get_time() - philo[i].last_meal) >= data->time2die)
 			{
 				pthread_mutex_lock(&data->simu_end_mtx);
@@ -256,8 +245,6 @@ void	monitor(void *arg)
 				printf("%ld %d died\n", get_time() - data->start_time, philo[i].id);
 				pthread_mutex_unlock(&data->print_mtx);
 				// printf("BRUH STILL ALIVE\n");
-
-
 				pthread_mutex_unlock(&data->last_meal);
 				return ;
 			}
@@ -265,7 +252,6 @@ void	monitor(void *arg)
 			i++;
 		}
 		usleep(250);
-
 	}
 }
 
