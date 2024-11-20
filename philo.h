@@ -26,8 +26,8 @@ typedef struct s_data
     long            time2sleep;
     long            num_of_meals;
     long            start_time;
-    int             simu_end;
-    pthread_mutex_t simu_end_mtx;
+    long             simulation_done;
+    pthread_mutex_t simulation_done_mtx;
     pthread_mutex_t last_meal;
     pthread_mutex_t print_mtx;
     pthread_mutex_t *forks;
@@ -36,15 +36,19 @@ typedef struct s_data
 
 typedef struct s_philo{
 
-    int     id;
-    int     l_fork;
-    int     r_fork;
-    int     died;
+    long     id;
+    long     l_fork;
+    long     r_fork;
+    long     died;
+    long     meal_count;
     long    last_meal;
     data_t  *data;
 } philo_t;
 
 
+// mutex_handlers
 
+// long	geter(pthread_mutex_t *mutex, long var);
+// void 	seter(pthread_mutex_t *mutex, long *var, long value);
 
 #endif

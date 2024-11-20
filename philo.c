@@ -1,8 +1,10 @@
 //TODO TODAY BEFORE GOING TO BED :
 	//THE MANDATORY IS READY TO PUSH ( )
 		//CHECK WHERE I WAS AT YESTERDAY			(√)
-		//FIX THE SIGFAULT							(√)
-		//KNOW WHY THE SEGFAULT 					(√)
+		//CLEAN THE CODE 							( )
+		//ADD THE FULL-MEALS OPTION					( )
+		//ADD THE MORE MUTEXE PROTECTION			( )
+		//PUSH THE MANDATORY AS READY				( )
 
 
 
@@ -54,9 +56,13 @@ int	parsing(char **av, data_t *data)
 	data->num_of_meals = ft_atoi(av[5]);
 	if (data->num_of_meals <= -1)
 		return (-1);
-	// if (data->num_of_philos <= 0 || data->time2die <= 0 || data->time2eat <= 0
-	// 	|| data->time2sleep <= 0 || data->num_of_meals < 0)
-	// 	return (-1);
+	if (data->num_of_philos > 200 || data->time2die < 60 || data->time2eat < 60
+		|| data->time2sleep < 60 || data->num_of_meals < 0)
+	{
+		printf("the num_of_philos shouldn't be more than 200"\
+		", and the values should be more than 60\n");
+		return (-1);
+	}
 	return (1);
 }
 long	get_time()
@@ -78,6 +84,7 @@ int init_philos(data_t *data, philo_t **philo)
 	if (!*philo)
 		return (-1);
 	data->start_time = get_time();
+	data->simulation_done = 0;
 	while (i < data->num_of_philos)
 	{
 		(*philo)[i].id = i + 1;
@@ -88,9 +95,9 @@ int init_philos(data_t *data, philo_t **philo)
 			(*philo)[i].r_fork = i + 1;
 		(*philo)[i].data = data; //assigning the data struct to each philo
 		(*philo)[i].last_meal = data->start_time;
+		(*philo)[i].meal_count  = 0;
 		i++;
 	}
-	data->simu_end = 0;
 	// printf("start_time :%ld", data->start_time);
 
 
@@ -103,6 +110,23 @@ int init_philos(data_t *data, philo_t **philo)
 	// 	i++;
 	// }
 	return (1);
+}
+
+void 	seter(pthread_mutex_t *mutex, long *var, int value)
+{
+	pthread_mutex_lock(mutex);
+	*var = value;
+	pthread_mutex_unlock(mutex);
+}
+long	geter(pthread_mutex_t *mutex, long *var)
+{
+	long	value;
+
+	// printf("test----------->%ld\n", *var);
+	pthread_mutex_lock(mutex);
+	value = *var;
+	pthread_mutex_unlock(mutex);
+	return (value);
 }
 
 int init_forks(data_t *data)
@@ -123,7 +147,7 @@ int init_forks(data_t *data)
 		return (-1);
 	if (pthread_mutex_init(&data->last_meal, NULL) != 0)
 		return (-1);
-	if (pthread_mutex_init(&data->simu_end_mtx, NULL) != 0)
+	if (pthread_mutex_init(&data->simulation_done_mtx, NULL) != 0)
 		return (-1);
 	return (1);
 }
@@ -132,8 +156,8 @@ void	print_fun(int flag, int id, data_t *data)
 {
 	long	timestamp;
 
-	pthread_mutex_lock(&data->simu_end_mtx);
-	if (!data->simu_end)
+	pthread_mutex_lock(&data->simulation_done_mtx);
+	if (!data->simulation_done)
 	{
 		pthread_mutex_lock(&data->print_mtx);
 		timestamp = get_time() - data->start_time;
@@ -148,7 +172,7 @@ void	print_fun(int flag, int id, data_t *data)
 		pthread_mutex_unlock(&data->print_mtx);
 		// return (1);
 	}
-	pthread_mutex_unlock(&data->simu_end_mtx);
+	pthread_mutex_unlock(&data->simulation_done_mtx);
 }
 
 void	eating(philo_t *philo)
@@ -164,6 +188,7 @@ void	eating(philo_t *philo)
 	philo->last_meal = get_time();
 	pthread_mutex_unlock(&data->last_meal);
 	print_fun(EAT, philo->id, data);
+	philo->meal_count++;
 	while (get_time() - start_action < data->time2eat)
 		usleep(250);
 }
@@ -197,13 +222,13 @@ void routine(void *arg)
 
 	while (1)
 	{
-		pthread_mutex_lock(&philo->data->simu_end_mtx);
-		if ( philo->data->simu_end)
+		// pthread_mutex_lock(&philo->data->simulation_done_mtx);
+		if ( geter(&philo->data->simulation_done_mtx, &philo->data->simulation_done))
 		{
-			pthread_mutex_unlock(&philo->data->simu_end_mtx);
+			// pthread_mutex_unlock(&philo->data->simulation_done_mtx);
 			break;
 		}
-		pthread_mutex_unlock(&philo->data->simu_end_mtx);
+		// pthread_mutex_unlock(&philo->data->simulation_done_mtx);
 		pthread_mutex_lock(&philo->data->forks[philo->l_fork]);
 		print_fun(FORK, philo->id, philo->data);
 		if (philo->data->num_of_philos == 1)					// PROTECT THE CASE OF 1 PHILOSOPHER
@@ -237,15 +262,15 @@ void	monitor(void *arg)
 			pthread_mutex_lock(&data->last_meal);
 			if ((philo[i].last_meal )&&(get_time() - philo[i].last_meal) >= data->time2die)
 			{
-				pthread_mutex_lock(&data->simu_end_mtx);
-				data->simu_end = 1;
-				pthread_mutex_unlock(&data->simu_end_mtx);
+				pthread_mutex_unlock(&data->last_meal);
+				pthread_mutex_lock(&data->simulation_done_mtx);
+				data->simulation_done = 1;
+				pthread_mutex_unlock(&data->simulation_done_mtx);
 				
 				pthread_mutex_lock(&data->print_mtx);
-				printf("%ld %d died\n", get_time() - data->start_time, philo[i].id);
+				printf("%ld %ld died\n", get_time() - data->start_time, philo[i].id);
 				pthread_mutex_unlock(&data->print_mtx);
 				// printf("BRUH STILL ALIVE\n");
-				pthread_mutex_unlock(&data->last_meal);
 				return ;
 			}
 			pthread_mutex_unlock(&data->last_meal);
@@ -290,7 +315,7 @@ int	main(int ac, char **av)
 	
 	if (ac != 5 && ac != 6)
 		return (printf("the program takes : nbr_of_philos, time2die, time2eat,"\
-		 " time2sleep, [nbr_times_each_philo_must_eat]"));
+		" time2sleep, [nbr_times_each_philo_must_eat]"));
 
 	if (parsing(av, &data) == -1)
 		return (-1);
