@@ -184,9 +184,14 @@ int	eating(philo_t *philo)
 {
 	data_t *data;
 	long	start_action;
-
+	long	meal_count;
 
 	data = philo->data;
+	meal_count = geter(&data->meal_cnt_mtx, &philo->meal_count);
+		// pthread_mutex_lock(&data->print_mtx);
+		// printf("mela_cout :%ld\n", geter(&data->meal_cnt_mtx, &philo->meal_count));
+		// pthread_mutex_unlock(&data->print_mtx);
+	
 	// if (philo->meal_count == data->num_of_meals)
 	// {
 		// pthread_mutex_lock(&data->print_mtx);
@@ -212,7 +217,7 @@ int	eating(philo_t *philo)
 	&& (get_time() - start_action < data->time2eat))
 		usleep(150);
 	
-	seter(&data->meal_cnt_mtx, &philo->meal_count, philo->meal_count++);
+	seter(&data->meal_cnt_mtx, &philo->meal_count, meal_count + 1);
 
 	pthread_mutex_unlock(&philo->data->forks[philo->l_fork]);
 	pthread_mutex_unlock(&philo->data->forks[philo->r_fork]);
@@ -298,8 +303,7 @@ void	monitor(void *arg)
 			// printf("last_meal :%ld\n\n",  philo[i].last_meal);
 
 			if ((geter(&data->last_meal, &philo[i].last_meal) && \
-			(get_time() - geter(&data->last_meal, &philo[i].last_meal)) >= data->time2die) \
-			|| is_full(philo))
+			(get_time() - geter(&data->last_meal, &philo[i].last_meal)) >= data->time2die))
 			{
 				// pthread_mutex_lock(&data->simu_done_mtx);
 				// data->simu_done = 1;
@@ -311,6 +315,12 @@ void	monitor(void *arg)
 				// printf("BRUH STILL ALIVE\n");
 				return ;
 			}
+			if (is_full(philo))
+			{
+				seter(&data->simu_done_mtx, &data->simu_done, 1);
+				return ;
+			}
+
 			i++;
 		}
 		usleep(150);
@@ -357,7 +367,6 @@ int	main(int ac, char **av)
 		return (-1);
 	
 	init_philos(&data, &philos);
-	printf("num --->:%ld\n", data.num_of_meals);
 
 	init_forks(&data);
 
