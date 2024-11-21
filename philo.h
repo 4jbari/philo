@@ -28,10 +28,11 @@ typedef struct s_data
     long			time2sleep;
     long			num_of_meals;
     long			start_time;
-    long			simulation_done;
+    long			simu_done;
 	
+    pthread_mutex_t	meal_cnt_mtx;
     pthread_mutex_t	num_of_philos_mtx;
-    pthread_mutex_t	simulation_done_mtx;
+    pthread_mutex_t	simu_done_mtx;
     pthread_mutex_t	last_meal;
     pthread_mutex_t	print_mtx;
     pthread_mutex_t	*forks;
