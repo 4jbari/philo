@@ -16,33 +16,37 @@
 #define SLEEP   2
 #define THINK   3
 
+#define BREAK	1
+
 
 
 typedef struct s_data
 {
-    long            num_of_philos;
-    long            time2die;
-    long            time2eat;
-    long            time2sleep;
-    long            num_of_meals;
-    long            start_time;
-    long             simulation_done;
-    pthread_mutex_t simulation_done_mtx;
-    pthread_mutex_t last_meal;
-    pthread_mutex_t print_mtx;
-    pthread_mutex_t *forks;
+    long			num_of_philos;
+    long			time2die;
+    long			time2eat;
+    long			time2sleep;
+    long			num_of_meals;
+    long			start_time;
+    long			simulation_done;
+	
+    pthread_mutex_t	num_of_philos_mtx;
+    pthread_mutex_t	simulation_done_mtx;
+    pthread_mutex_t	last_meal;
+    pthread_mutex_t	print_mtx;
+    pthread_mutex_t	*forks;
 } data_t;
 
 
 typedef struct s_philo{
 
-    long     id;
-    long     l_fork;
-    long     r_fork;
-    long     died;
-    long     meal_count;
-    long    last_meal;
-    data_t  *data;
+    long	id;
+    long	l_fork;
+    long	r_fork;
+    long	died;
+    long	meal_count;
+    long	last_meal;
+    data_t	*data;
 } philo_t;
 
 

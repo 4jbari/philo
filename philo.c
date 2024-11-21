@@ -112,7 +112,7 @@ int init_philos(data_t *data, philo_t **philo)
 	return (1);
 }
 
-void 	seter(pthread_mutex_t *mutex, long *var, int value)
+void 	seter(pthread_mutex_t *mutex, long *var, long value)
 {
 	pthread_mutex_lock(mutex);
 	*var = value;
@@ -175,7 +175,7 @@ void	print_fun(int flag, int id, data_t *data)
 	pthread_mutex_unlock(&data->simulation_done_mtx);
 }
 
-void	eating(philo_t *philo)
+int	eating(philo_t *philo)
 {
 	data_t *data;
 	long	start_action;
@@ -183,14 +183,29 @@ void	eating(philo_t *philo)
 
 	data = philo->data;
 	start_action = get_time();
-
-	pthread_mutex_lock(&data->last_meal);
-	philo->last_meal = get_time();
-	pthread_mutex_unlock(&data->last_meal);
+	seter(&data->last_meal, &philo->last_meal, get_time());
+	pthread_mutex_lock(&philo->data->forks[philo->l_fork]);
+	print_fun(FORK, philo->id, philo->data);
+	if (geter(&data->num_of_philos_mtx, &data->num_of_philos) == 1)					// PROTECT THE CASE OF 1 PHILOSOPHER
+		return (BREAK);
+	pthread_mutex_lock(&philo->data->forks[philo->r_fork]);
+	print_fun(FORK, philo->id, philo->data);
 	print_fun(EAT, philo->id, data);
+
 	philo->meal_count++;
 	while (get_time() - start_action < data->time2eat)
+	{
+		// if ((get_time() - start_action) % 10 == 0)
+		// {
+		// 	pthread_mutex_lock(&data->print_mtx);
+		// 	printf("in eat:%ld\n", get_time() - start_action);
+		// 	pthread_mutex_unlock(&data->print_mtx);
+		// }
 		usleep(250);
+	}
+	pthread_mutex_unlock(&philo->data->forks[philo->l_fork]);
+	pthread_mutex_unlock(&philo->data->forks[philo->r_fork]);
+	return (0);
 }
 
 void	sleeping(philo_t *philo)
@@ -202,7 +217,17 @@ void	sleeping(philo_t *philo)
 	start_action = get_time();
 	print_fun(SLEEP, philo->id, data);
 	while (get_time() - start_action < data->time2sleep)
+	{
+		// if ((get_time() - start_action) % 10 == 0)
+		// {
+		// 	pthread_mutex_lock(&data->print_mtx);
+		// 	printf("in sleep:%ld\n", get_time() - start_action);
+		// 	pthread_mutex_unlock(&data->print_mtx);
+		// }
+
 		usleep(250);
+	}
+
 }
 
 void	thinking(philo_t *philo)
@@ -217,27 +242,18 @@ void	thinking(philo_t *philo)
 void routine(void *arg)
 {
 	philo_t *philo = (philo_t *)arg;
+	data_t	*data = philo->data;
+
 	if (philo->id % 2 == 0)
 		sleeping(philo);
 
 	while (1)
 	{
-		// pthread_mutex_lock(&philo->data->simulation_done_mtx);
-		if ( geter(&philo->data->simulation_done_mtx, &philo->data->simulation_done))
-		{
-			// pthread_mutex_unlock(&philo->data->simulation_done_mtx);
+		if (geter(&philo->data->simulation_done_mtx, &philo->data->simulation_done))
 			break;
-		}
-		// pthread_mutex_unlock(&philo->data->simulation_done_mtx);
-		pthread_mutex_lock(&philo->data->forks[philo->l_fork]);
-		print_fun(FORK, philo->id, philo->data);
-		if (philo->data->num_of_philos == 1)					// PROTECT THE CASE OF 1 PHILOSOPHER
-			return ;
-		pthread_mutex_lock(&philo->data->forks[philo->r_fork]);
-		print_fun(FORK, philo->id, philo->data);
-		eating(philo);
-		pthread_mutex_unlock(&philo->data->forks[philo->l_fork]);
-		pthread_mutex_unlock(&philo->data->forks[philo->r_fork]);
+
+		if (eating(philo) == BREAK)
+			break;
 		sleeping(philo);
 		thinking(philo);
 	}
