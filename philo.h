@@ -56,4 +56,8 @@ typedef struct s_philo{
 // long	geter(pthread_mutex_t *mutex, long var);
 // void 	seter(pthread_mutex_t *mutex, long *var, long value);
 
+
+//tools
+char	*ft_strtrim(char const *s1, char const *set);
+
 #endif

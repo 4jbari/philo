@@ -1,9 +1,9 @@
 //TODO TODAY BEFORE GOING TO BED :
 	//THE MANDATORY IS READY TO PUSH ( )
 		//CHECK WHERE I WAS AT YESTERDAY			(√)
-		//CLEAN THE CODE 							( )
-		//ADD THE FULL-MEALS OPTION					( )
-		//ADD THE MORE MUTEXE PROTECTION			( )
+		//CLEAN THE CODE IN 30MIN						( )
+		//ADD THE FULL-MEALS OPTION					(√)
+		//ADD THE MORE MUTEXE PROTECTION			(√)
 		//PUSH THE MANDATORY AS READY				( )
 
 
@@ -11,34 +11,50 @@
 
 #include "philo.h"
 
-long	ft_atoi(char *s)
+int	is_space(char c)
 {
-	int	n;
+	if ((c >= 9 && c <= 13) || c == 32)
+		return (1);
+	return (0);
+}
+
+int	ft_strlen(char *s)
+{
 	int	i;
 
 	i = 0;
+	while (s && s[i])
+		i++;
+	i--;
+	while (s && is_space(s[i]))
+		i--;
+	return (i);
+}
+
+long	ft_atoi(char *s)
+{
+	long	n;
+	int		i;
+
+	i = 0;
 	n = 0;
-	while (s && (s[i] == '-' || s[i] == '+'))
+	while (s && ((s[i] >= 9 && s[i] <= 13) || s[i] == 32))
+		i++;
+	if(s && (s[i] == '-' || s[i] == '+'))
 		if (s[i++] == '-')
-		{
-			printf("ERROR :NEGATIVE NUMBERS");
 			return (-1);
-		}
-	while (s && *s)
+	while (s && s[i])
 	{
-		if (*s > '9' || *s < '0')
-		{
-			printf("ERROR :INCORRECT VALUES");
+		if (((s[i] > '9' || s[i] < '0') && !is_space(s[i])) \
+		|| (is_space(s[i]) && i < ft_strlen(s)))
 			return (-1);
-		}
-		else
-		{
-			n = n * 10 + (*s - 48);
-			s++;
-		}
+		else if (s[i] <= '9' && s[i] >= '0')
+			n = n * 10 + (s[i] - 48);
+		i++;
 	}
 	return (n);
 }
+
 int	parsing(char **av, data_t *data)
 {
 	data->num_of_philos = ft_atoi(av[1]);
@@ -58,13 +74,8 @@ int	parsing(char **av, data_t *data)
 		return (-1);
 	if (!av[5])
 		data->num_of_meals = -1;
-	if (data->num_of_philos > 200 || data->time2die < 60 || data->time2eat < 60
-		|| data->time2sleep < 60 )
-	{
-		printf("the num_of_philos shouldn't be more than 200"\
-		", and the values should be more than 60\n");
+	if (data->num_of_philos > 200 || data->num_of_philos <= 0)
 		return (-1);
-	}
 	return (1);
 }
 long	get_time()
@@ -100,17 +111,6 @@ int init_philos(data_t *data, philo_t **philo)
 		(*philo)[i].meal_count  = 0;
 		i++;
 	}
-	// printf("start_time :%ld", data->start_time);
-
-
-	//remove below
-	// i = 0;
-	// while (i < data->num_of_philos)
-	// {
-	// 	printf("philo id = %d, left fork %d, right fork %d, time2die :%ld\n", (*philo)[i].id, (*philo)[i].l_fork, (*philo)[i].r_fork, (*philo)[i].data->time2die);
-		
-	// 	i++;
-	// }
 	return (1);
 }
 
@@ -124,7 +124,6 @@ long	geter(pthread_mutex_t *mutex, long *var)
 {
 	long	value;
 
-	// printf("test----------->%ld\n", *var);
 	pthread_mutex_lock(mutex);
 	value = *var;
 	pthread_mutex_unlock(mutex);
@@ -215,7 +214,7 @@ int	eating(philo_t *philo)
 
 	while (!geter(&data->simu_done_mtx, &data->simu_done) \
 	&& (get_time() - start_action < data->time2eat))
-		usleep(150);
+		usleep(250);
 	
 	seter(&data->meal_cnt_mtx, &philo->meal_count, meal_count + 1);
 
@@ -234,13 +233,12 @@ void	sleeping(philo_t *philo)
 	print_fun(SLEEP, philo->id, data);
 	while (!geter(&data->simu_done_mtx, &data->simu_done) \
 	&& (get_time() - start_action < data->time2sleep))
-		usleep(150);
+		usleep(250);
 }
 
 void	thinking(philo_t *philo)
 {
 	data_t	*data;
-	long	start_action;
 
 	data = philo->data;
 	print_fun(THINK, philo->id, data);
@@ -249,7 +247,7 @@ void	thinking(philo_t *philo)
 void routine(void *arg)
 {
 	philo_t *philo = (philo_t *)arg;
-	data_t	*data = philo->data;
+	// data_t	*data = philo->data;
 
 	if (philo->id % 2 == 0)
 		sleeping(philo);
@@ -268,19 +266,18 @@ int	is_full(philo_t *philo)
 {
 	data_t	*data;
 	int		is_full;
-	int		flag;
 	int		i;
 
 	i = 0;
-	flag = 0;
+	is_full = 0;
 	data = philo[0].data;
 	while (i < data->num_of_philos)
 	{
 		if (geter(&data->meal_cnt_mtx, &philo[i].meal_count) == data->num_of_meals)
-			flag++;
+			is_full++;
 		i++;
 	}
-	if (flag == data->num_of_philos)
+	if (is_full == data->num_of_philos)
 		return (1);
 	return (0);
 }
@@ -288,7 +285,6 @@ void	monitor(void *arg)
 {
 	philo_t	*philo;
 	data_t	*data;
-	int		flag = 0;
 	int		i;
 	
 	i = 0;
@@ -323,7 +319,7 @@ void	monitor(void *arg)
 
 			i++;
 		}
-		usleep(150);
+		usleep(250);
 	}
 }
 
@@ -358,27 +354,29 @@ int	main(int ac, char **av)
 	data_t data;
 	philo_t *philos;
 	
-	
 	if (ac != 5 && ac != 6)
 		return (printf("the program takes : nbr_of_philos, time2die, time2eat,"\
 		" time2sleep, [nbr_times_each_philo_must_eat]"));
-
 	if (parsing(av, &data) == -1)
-		return (-1);
-	
-	init_philos(&data, &philos);
-
+	{
+		printf("ERROR :INCORRECT VALUES\n");
+		return (1);
+	}
+	if (init_philos(&data, &philos) < 0)
+		return (1);
 	init_forks(&data);
 
 	init_threads(&data, philos);
 
 
-	// printf("%ld", sysconf(_SC_CLK_TCK));
-
-	//PRINTING DATA;
-		// printf("%ld\n", data.num_of_philos);
-		// printf("%ld\n", data.time2die);
-		// printf("%ld\n", data.time2eat);
-		// printf("%ld\n", data.time2sleep);
-		// printf("%ld\n", data.num_of_meals);
+	// for (int i = 0; i < ac ; i++)
+	// {
+	// 	printf("%d :%s\n", i, av[i]);
+	// }
+	// PRINTING DATA;
+		// printf("data.num_of_philos :%ld\n", data.num_of_philos);
+		// printf("data.time2die  	   :%ld\n", data.time2die);
+		// printf("data.time2eat	   :%ld\n", data.time2eat);
+		// printf("data.time2sleep	   :%ld\n", data.time2sleep);
+		// printf("data.num_of_meals  ;%ld\n", data.num_of_meals);
 }
