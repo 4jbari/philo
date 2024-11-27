@@ -1,11 +1,5 @@
 {
     "files.associations": {
-        "pthread.h": "c",
-        "_pthread_types.h": "c",
-        "philo.h": "c",
-        "stdio.h": "c",
-        "time.h": "c",
-        "stdlib.h": "c"
-    },
-    "makefile.configureOnOpen": false
+        "philo.h": "c"
+    }
 }

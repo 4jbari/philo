@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   philo.h                                            :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: ajbari <ajbari@student.42.fr>              +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/11/27 04:46:02 by ajbari            #+#    #+#             */
+/*   Updated: 2024/11/27 06:12:10 by ajbari           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #ifndef PHILO_H
 # define PHILO_H
 
@@ -28,7 +40,6 @@ typedef struct s_data
 	long			simu_done;
 
 	pthread_mutex_t	meal_cnt_mtx;
-	pthread_mutex_t	num_of_philos_mtx;//
 	pthread_mutex_t	simu_done_mtx;
 	pthread_mutex_t	last_meal;
 	pthread_mutex_t	print_mtx;
@@ -52,12 +63,13 @@ long	geter(pthread_mutex_t *mutex, long *var);
 
 // paraser
 int		parsing(char **av, t_data *data);
+char	**ft_split(char const *s, char c);
 
 // routine
-void	routine(void *arg);
+void	routine(void *arg); 
 
 // monitor 
-void	monitor(t_philo *philo, t_data *data);
+void	monitor(t_philo *philo, t_data *data); 
 
 // utils
 long	get_time(void);

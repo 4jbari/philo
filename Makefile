@@ -1,5 +1,5 @@
-SRC = philo.c parser.c initiator.c utils.c mutex_handlers.c routine.c
-FLAGS =  -fsanitize=thread -Wall -Wextra -Werror 
+SRC = philo.c parser.c initiator.c utils.c mutex_handlers.c routine.c 
+FLAGS =  -Wall -Wextra -Werror -fsanitize=thread
 
 OBJ = $(SRC:.c=.o)
 
@@ -10,8 +10,8 @@ all: $(NAME)
 $(NAME): $(OBJ)
 	$(CC)  $(FLAGS)  $(OBJ) -o $(NAME) 
 
-%.o:%.c
-	$(CC)  $(FLAGS) -c $< -o $@ 
+%.o:%.c philo.h
+	$(CC) $(FLAGS) -c $< -o $@ 
 
 clean:
 	$(RM) $(OBJ)
@@ -21,4 +21,4 @@ fclean: clean
 
 re: fclean all
 
-.PHONY: all clean
+.PHONY: all fclean clean re 

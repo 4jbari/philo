@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   initiator.c                                        :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: ajbari <ajbari@student.42.fr>              +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/11/26 22:21:04 by ajbari            #+#    #+#             */
+/*   Updated: 2024/11/27 01:39:24 by ajbari           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "philo.h"
 
 int	init_threads(t_data *data, t_philo *philo)
@@ -20,7 +32,7 @@ int	init_threads(t_data *data, t_philo *philo)
 	i = 0;
 	while (i < data->num_of_philos)
 		pthread_join(threads[i++], NULL);
-	// free(threads);
+	free(threads);
 	return (1);
 }
 
@@ -43,8 +55,6 @@ int	init_forks(t_data *data)
 	if (pthread_mutex_init(&data->last_meal, NULL) != 0)
 		return (-1);
 	if (pthread_mutex_init(&data->simu_done_mtx, NULL) != 0)
-		return (-1);
-	if (pthread_mutex_init(&data->num_of_philos_mtx, NULL) != 0) //
 		return (-1);
 	if (pthread_mutex_init(&data->meal_cnt_mtx, NULL) != 0)
 		return (-1);

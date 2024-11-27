@@ -1,12 +1,28 @@
-//TODO TODAY BEFORE GOING TO BED :
-	//THE MANDATORY IS READY TO PUSH ( )
-		//CHECK WHERE I WAS AT YESTERDAY			(√)
-		//CLEAN THE CODE IN 30MIN						( )
-		//ADD THE FULL-MEALS OPTION					(√)
-		//ADD THE MORE MUTEXE PROTECTION			(√)
-		//PUSH THE MANDATORY AS READY				( )
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   philo.c                                            :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: ajbari <ajbari@student.42.fr>              +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/11/27 04:44:50 by ajbari            #+#    #+#             */
+/*   Updated: 2024/11/27 06:47:08 by ajbari           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
 #include "philo.h"
+
+void	mutex_cleaner(t_data *data)
+{
+	if (pthread_mutex_destroy(&data->meal_cnt_mtx) != 0)
+		return ;
+	if (pthread_mutex_destroy(&data->simu_done_mtx) != 0)
+		return ;
+	if (pthread_mutex_destroy(&data->last_meal) != 0)
+		return ;
+	if (pthread_mutex_destroy(&data->print_mtx) != 0)
+		return ;
+}
 
 void	print_fun(int flag, int id, t_data *data)
 {
@@ -31,8 +47,8 @@ void	print_fun(int flag, int id, t_data *data)
 			get_time() - data->start_time, id);
 		pthread_mutex_unlock(&data->print_mtx);
 	}
-    else if (flag == DEAD)
-        printf("%ld %d died\n", \
+	else if (flag == DEAD)
+		printf("%ld %d died\n", \
 		get_time() - data->start_time, id);
 	pthread_mutex_unlock(&data->simu_done_mtx);
 }
@@ -60,7 +76,7 @@ int	is_full(t_philo *philo)
 
 void	monitor(t_philo *philo, t_data *data)
 {
-	int i;
+	int	i;
 
 	i = 0;
 	while (1)
@@ -73,7 +89,7 @@ void	monitor(t_philo *philo, t_data *data)
 			>= data->time2die)
 			{
 				seter(&data->simu_done_mtx, &data->simu_done, 1);
-                print_fun(DEAD, philo[i].id, data);
+				print_fun(DEAD, philo[i].id, data);
 				return ;
 			}
 			if (is_full(philo))
@@ -101,4 +117,7 @@ int	main(int ac, char **av)
 		return (1);
 	init_forks(&data);
 	init_threads(&data, philos);
+	free(philos);
+	free(data.forks);
+	mutex_cleaner(&data);
 }
