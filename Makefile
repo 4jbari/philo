@@ -1,5 +1,5 @@
 SRC = philo.c parser.c initiator.c utils.c mutex_handlers.c routine.c 
-FLAGS =  -Wall -Wextra -Werror -fsanitize=thread
+FLAGS =  -Wall -Wextra -Werror #-fsanitize=thread
 
 OBJ = $(SRC:.c=.o)
 
